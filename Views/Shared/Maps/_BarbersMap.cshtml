@@ -1,0 +1,103 @@
+@using BarberHub.Web.Features.Barbers.Dtos
+@using BarberHub.Web.Shared.Config
+@using Microsoft.Extensions.Options
+@inject IOptions<FeatureFlags> FF
+@inject IOptions<GoogleOptions> GO
+@model List<BarberListItemDto>
+
+@{
+    var enabled = FF.Value.MapsEnabled && !string.IsNullOrEmpty(GO.Value.Maps.ApiKey);
+    var withCoords = Model.Where(b => b.Latitude.HasValue && b.Longitude.HasValue).ToList();
+}
+
+@if (!enabled)
+{
+    <div class="bh-card p-4 text-center" style="background:var(--bh-bg);">
+        <i class="bi bi-map text-coral" style="font-size:2.4rem;"></i>
+        <p class="mt-2 mb-1">Map view available once configured</p>
+        <p class="mb-0 text-muted small">Set <code>Google:Maps:ApiKey</code> and <code>Features:MapsEnabled = true</code> in <code>appsettings.json</code>.</p>
+    </div>
+}
+else
+{
+    <div id="bhBarbersMap" class="bh-card" style="width:100%;height:380px;border-radius:var(--bh-radius);overflow:hidden;"></div>
+
+    <partial name="Maps/_GoogleMapsLoader" />
+
+    <script type="application/json" id="bhBarbersMapData">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(withCoords.Select(b => new {
+    id = b.Id,
+    name = b.ShopName,
+    city = b.City,
+    lat = b.Latitude,
+    lng = b.Longitude,
+    distance = b.DistanceKm,
+    minPrice = b.MinPrice
+})))
+    </script>
+
+    <script>
+        (async function() {
+            await window.bhMapsReady();
+            const el = document.getElementById('bhBarbersMap');
+            if (!el) return;
+
+            const dataEl = document.getElementById('bhBarbersMapData');
+            const points = JSON.parse(dataEl.textContent || '[]');
+
+            const map = new google.maps.Map(el, {
+                center: { lat: 20.5937, lng: 78.9629 },  // India center fallback
+                zoom: 5,
+                streetViewControl: false,
+                mapTypeControl: false
+            });
+
+            const bounds = new google.maps.LatLngBounds();
+
+            points.forEach(p => {
+                const m = new google.maps.Marker({
+                    position: { lat: p.lat, lng: p.lng },
+                    map,
+                    title: p.name
+                });
+                const info = new google.maps.InfoWindow({
+                    content:
+                        '<div style="font-family:sans-serif;font-size:13px;">' +
+                        '  <div style="font-weight:700;margin-bottom:2px;">' + (p.name || '') + '</div>' +
+                        '  <div style="color:#6b7280;">' + (p.city || '') + '</div>' +
+                        (p.minPrice ? '<div style="margin-top:4px;">From ₹' + p.minPrice + '</div>' : '') +
+                        '  <a href="/Barbers/Details/' + p.id + '" style="color:#ef5b5b;font-weight:600;">View shop &rarr;</a>' +
+                        '</div>'
+                });
+                m.addListener('click', () => info.open(map, m));
+                bounds.extend({ lat: p.lat, lng: p.lng });
+            });
+
+            try {
+                const r = await fetch('/Location/Mine', { credentials: 'same-origin' });
+                if (r.ok) {
+                    const me = await r.json();
+                    if (me.lat && me.lng) {
+                        new google.maps.Marker({
+                            position: { lat: me.lat, lng: me.lng },
+                            map,
+                            label: { text: 'You', color: '#fff', fontSize: '12px', fontWeight: '700' },
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 14,
+                                fillColor: '#ef5b5b',
+                                fillOpacity: 1,
+                                strokeColor: '#fff',
+                                strokeWeight: 2
+                            }
+                        });
+                        bounds.extend({ lat: me.lat, lng: me.lng });
+                    }
+                }
+            } catch {}
+
+            if (!bounds.isEmpty()) map.fitBounds(bounds);
+            else { map.setCenter({ lat: 20.5937, lng: 78.9629 }); map.setZoom(5); }
+        })();
+    </script>
+}

@@ -1,0 +1,973 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ef5b5b" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Barber Hub" />
+    <title>@ViewData["Title"] - Barber Hub</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bh-primary: #ef5b5b; --bh-primary-dark: #d94545; --bh-primary-soft: #fce8e8;
+            --bh-accent: #f9a826; --bh-bg: #faf7f5; --bh-surface: #ffffff;
+            --bh-text: #1a1d29; --bh-text-muted: #6b7280; --bh-border: #f0ebe7;
+            --bh-success: #16a34a; --bh-warning: #f59e0b; --bh-danger: #ef4444;
+            --bh-shadow-sm: 0 1px 2px rgba(26,29,41,0.04);
+            --bh-shadow: 0 4px 16px rgba(26,29,41,0.06);
+            --bh-shadow-lg: 0 12px 40px rgba(26,29,41,0.10);
+            --bh-radius: 16px; --bh-radius-sm: 10px;
+            --bh-tabbar-h: 64px;
+        }
+        * { -webkit-font-smoothing: antialiased; }
+        html, body { overflow-x: hidden; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background: var(--bh-bg); color: var(--bh-text);
+            font-size: 15px; line-height: 1.55;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Fraunces', Georgia, serif; font-weight: 600;
+            letter-spacing: -0.02em; color: var(--bh-text);
+        }
+        .text-coral { color: var(--bh-primary) !important; }
+        .text-muted { color: var(--bh-text-muted) !important; }
+
+        /* ---------- Navbar (sticky, top of stacking) ---------- */
+        .bh-navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: saturate(180%) blur(14px);
+            -webkit-backdrop-filter: saturate(180%) blur(14px);
+            border-bottom: 1px solid var(--bh-border);
+            padding: 0.6rem 0;
+            position: sticky; top: 0; z-index: 1030;
+        }
+        .bh-brand {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-family: 'Fraunces', serif; font-weight: 700;
+            font-size: 1.2rem; color: var(--bh-text); text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+        .bh-brand:hover { color: var(--bh-primary); }
+        .bh-brand-mark {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--bh-primary), var(--bh-primary-dark));
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #fff; box-shadow: 0 4px 12px rgba(239,91,91,0.35);
+        }
+        .bh-nav-link {
+            color: var(--bh-text); font-weight: 500; padding: 8px 12px !important;
+            border-radius: 10px; transition: all .15s ease; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .bh-nav-link:hover { background: var(--bh-primary-soft); color: var(--bh-primary); }
+        .bh-cart-pill {
+            background: var(--bh-text); color: #fff !important;
+            padding: 7px 14px !important; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+        }
+        .bh-cart-pill:hover { background: var(--bh-primary); color: #fff !important; }
+        .bh-avatar-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 4px 12px 4px 4px !important; border-radius: 999px;
+            background: #fff; border: 1px solid var(--bh-border) !important;
+            color: var(--bh-text) !important; font-weight: 500;
+        }
+        .bh-avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--bh-primary), var(--bh-accent));
+            color: #fff; display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: .8rem;
+        }
+
+        /* Notification bell */
+        .bh-bell-btn {
+            position: relative; display: inline-flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #fff; border: 1px solid var(--bh-border);
+            color: var(--bh-text); cursor: pointer;
+        }
+        .bh-bell-btn:hover { background: var(--bh-primary-soft); color: var(--bh-primary); }
+        .bh-bell-badge {
+            position: absolute; top: 4px; right: 4px;
+            background: var(--bh-primary); color: #fff;
+            font-size: .65rem; font-weight: 700; line-height: 1;
+            border-radius: 999px; padding: 3px 5px; min-width: 16px; text-align: center;
+            display: none;
+        }
+        .bh-bell-badge.show { display: inline-block; }
+        .bh-notif-panel {
+            min-width: 320px; max-width: 360px; max-height: 480px; overflow-y: auto;
+            padding: 0 !important;
+        }
+        .bh-notif-item {
+            display: flex; gap: 10px; padding: 12px 14px;
+            border-bottom: 1px solid var(--bh-border); font-size: .85rem;
+            background: var(--bh-primary-soft);
+            transition: background-color .2s ease, opacity .25s ease, transform .25s ease, max-height .35s ease, padding .35s ease;
+        }
+        .bh-notif-item:last-child { border-bottom: 0; }
+        .bh-notif-item:hover { background: #fff5f5; }
+        .bh-notif-item.fade-out {
+            opacity: 0; transform: translateX(40px); max-height: 0;
+            padding-top: 0; padding-bottom: 0; overflow: hidden;
+        }
+        .bh-notif-icon {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--bh-bg); display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; color: var(--bh-primary);
+        }
+
+        /* Dropdowns above content */
+        .dropdown-menu {
+            border: 1px solid var(--bh-border); border-radius: 14px;
+            box-shadow: var(--bh-shadow-lg); padding: 8px; margin-top: 8px;
+            z-index: 1050 !important;
+        }
+        .dropdown-item { border-radius: 8px; padding: 8px 12px; font-weight: 500; }
+        .dropdown-item:hover { background: var(--bh-primary-soft); color: var(--bh-primary); }
+        .bh-navbar .dropdown { position: relative; z-index: 1031; }
+        .bh-navbar .dropdown.show { z-index: 1050; }
+
+        main.bh-main { position: relative; z-index: 1; flex: 1 0 auto; }
+
+        /* ---------- Toaster ---------- */
+        .bh-toast-container {
+            position: fixed; top: 80px; right: 20px;
+            z-index: 1080;
+            display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+            max-width: calc(100vw - 32px);
+        }
+        .bh-toast {
+            background: #fff; border: 1px solid var(--bh-border);
+            border-left: 4px solid var(--bh-primary);
+            border-radius: 12px; box-shadow: var(--bh-shadow-lg);
+            padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px;
+            min-width: 280px; max-width: 360px;
+            pointer-events: auto;
+            animation: bh-toast-in .3s ease-out both;
+            font-size: .9rem;
+        }
+        .bh-toast.bh-toast-success { border-left-color: var(--bh-success); }
+        .bh-toast.bh-toast-success .bh-toast-icon { color: var(--bh-success); }
+        .bh-toast.bh-toast-error { border-left-color: var(--bh-danger); }
+        .bh-toast.bh-toast-error .bh-toast-icon { color: var(--bh-danger); }
+        .bh-toast.bh-toast-info { border-left-color: var(--bh-primary); }
+        .bh-toast.bh-toast-info .bh-toast-icon { color: var(--bh-primary); }
+        .bh-toast-icon { font-size: 1.2rem; flex-shrink: 0; line-height: 1.3; }
+        .bh-toast-body { flex: 1; line-height: 1.45; }
+        .bh-toast-close {
+            border: 0; background: transparent; color: var(--bh-text-muted);
+            cursor: pointer; padding: 0 2px; font-size: 1rem; line-height: 1;
+        }
+        .bh-toast-close:hover { color: var(--bh-text); }
+        .bh-toast.fade-out { animation: bh-toast-out .25s ease-in both; }
+        @@keyframes bh-toast-in {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @@keyframes bh-toast-out {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(40px); }
+        }
+
+        /* ---------- Cards ---------- */
+        .bh-card, .card {
+            background: var(--bh-surface); border: 1px solid var(--bh-border);
+            border-radius: var(--bh-radius); box-shadow: var(--bh-shadow-sm);
+        }
+        .bh-card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+        .bh-card-hover:hover { transform: translateY(-3px); box-shadow: var(--bh-shadow-lg); }
+
+        /* ---------- Buttons ---------- */
+        .btn { font-weight: 600; border-radius: 10px; padding: .55rem 1.1rem; transition: all .15s ease; }
+        .btn-lg { padding: .75rem 1.5rem; }
+        .btn-sm { padding: .35rem .85rem; font-size: .85rem; border-radius: 8px; }
+        .btn-primary { background: var(--bh-primary); border-color: var(--bh-primary); color: #fff; box-shadow: 0 4px 14px rgba(239,91,91,0.25); }
+        .btn-primary:hover, .btn-primary:focus { background: var(--bh-primary-dark); border-color: var(--bh-primary-dark); }
+        .btn-outline-primary { color: var(--bh-primary); border-color: var(--bh-primary); }
+        .btn-outline-primary:hover { background: var(--bh-primary); border-color: var(--bh-primary); }
+        .btn-light { background: #fff; border-color: var(--bh-border); color: var(--bh-text); }
+        .btn-light:hover { background: var(--bh-bg); }
+        .btn-outline-secondary { color: var(--bh-text); border-color: var(--bh-border); }
+        .btn-outline-secondary:hover { background: var(--bh-text); border-color: var(--bh-text); color: #fff; }
+        .btn-outline-danger { color: var(--bh-danger); border-color: #fde2e2; }
+        .btn-outline-danger:hover { background: var(--bh-danger); border-color: var(--bh-danger); }
+        .btn-success { background: var(--bh-success); border-color: var(--bh-success); }
+        .btn-danger { background: var(--bh-danger); border-color: var(--bh-danger); }
+
+        /* ---------- Forms ---------- */
+        .form-label { font-weight: 600; font-size: .85rem; margin-bottom: .35rem; color: #374151; }
+        .form-control, .form-select {
+            border: 1px solid var(--bh-border); border-radius: 10px;
+            padding: .65rem .9rem; background: #fff; font-size: 16px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--bh-primary);
+            box-shadow: 0 0 0 4px rgba(239,91,91,0.12);
+        }
+        .form-check-input:checked { background-color: var(--bh-primary); border-color: var(--bh-primary); }
+
+        /* ---------- Tables ---------- */
+        .table { --bs-table-bg: transparent; margin-bottom: 0; }
+        .table > :not(caption) > * > * { padding: 14px 12px; border-bottom-color: var(--bh-border); }
+        .table thead th {
+            font-size: .75rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: var(--bh-text-muted);
+        }
+
+        /* ---------- Badges ---------- */
+        .badge { font-weight: 600; padding: .4em .7em; border-radius: 999px; font-size: .72rem; letter-spacing: .02em; }
+        .bg-success { background: #dcfce7 !important; color: #15803d !important; }
+        .bg-warning { background: #fef3c7 !important; color: #b45309 !important; }
+        .bg-danger { background: #fee2e2 !important; color: #b91c1c !important; }
+        .bg-primary { background: var(--bh-primary-soft) !important; color: var(--bh-primary-dark) !important; }
+        .bg-secondary { background: #f3f4f6 !important; color: #4b5563 !important; }
+        .bg-light { background: #f3f4f6 !important; color: #4b5563 !important; }
+
+        /* ---------- Hero ---------- */
+        .bh-hero {
+            position: relative; overflow: hidden;
+            background: linear-gradient(135deg, #1a1d29 0%, #2d1b3d 100%);
+            color: #fff; border-radius: 20px; padding: 56px 32px; margin-bottom: 24px;
+        }
+        .bh-hero::before { content: ''; position: absolute; top: -100px; right: -60px; width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(239,91,91,0.55), transparent 70%); border-radius: 50%; pointer-events: none; }
+        .bh-hero::after { content: ''; position: absolute; bottom: -120px; left: -80px; width: 320px; height: 320px;
+            background: radial-gradient(circle, rgba(249,168,38,0.35), transparent 70%); border-radius: 50%; pointer-events: none; }
+        .bh-hero-content { position: relative; z-index: 2; max-width: 640px; }
+        .bh-hero h1 { color: #fff; font-size: 2.4rem; line-height: 1.1; margin-bottom: 16px; }
+        .bh-hero p { color: rgba(255,255,255,.85); font-size: 1.05rem; margin-bottom: 24px; }
+
+        .section-title { font-size: 1.5rem; margin-bottom: 4px; }
+        .section-subtitle { color: var(--bh-text-muted); margin-bottom: 20px; }
+
+        /* ---------- Product card ---------- */
+        .product-card { background: #fff; border: 1px solid var(--bh-border); border-radius: var(--bh-radius);
+            overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; height: 100%; display: flex; flex-direction: column; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: var(--bh-shadow-lg); }
+        .product-img-wrap { position: relative; aspect-ratio: 1/1; background: var(--bh-bg);
+            display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .badge-discount-floating { position: absolute; top: 10px; left: 10px; background: var(--bh-primary); color: #fff;
+            padding: 5px 9px; border-radius: 999px; font-weight: 700; font-size: .72rem;
+            box-shadow: 0 4px 12px rgba(239,91,91,0.35); }
+        .product-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .product-name { font-weight: 600; font-size: .95rem; margin: 0; line-height: 1.3; color: var(--bh-text); }
+        .product-meta { font-size: .75rem; color: var(--bh-text-muted); }
+        .product-price-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+        .price-final { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.15rem; color: var(--bh-text); }
+        .price-original { font-size: .85rem; color: var(--bh-text-muted); text-decoration: line-through; }
+
+        /* ---------- Barber card ---------- */
+        .barber-card { background: #fff; border: 1px solid var(--bh-border); border-radius: var(--bh-radius);
+            overflow: hidden; height: 100%; transition: transform .2s ease, box-shadow .2s ease; }
+        .barber-card:hover { transform: translateY(-3px); box-shadow: var(--bh-shadow-lg); }
+        .barber-cover { height: 80px; background: linear-gradient(135deg, var(--bh-primary), var(--bh-accent)); position: relative; }
+        .barber-avatar { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff;
+            background: #f3f4f6; object-fit: cover; margin-top: -35px; margin-left: 18px;
+            box-shadow: var(--bh-shadow); display: flex; align-items: center; justify-content: center; color: var(--bh-primary); }
+
+        /* ---------- Chips ---------- */
+        .bh-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 14px;
+            background: #fff; border: 1px solid var(--bh-border); font-weight: 500; cursor: pointer;
+            transition: all .15s ease; color: var(--bh-text); text-decoration: none; font-size: .9rem; }
+        .bh-chip:hover { border-color: var(--bh-primary); color: var(--bh-primary); }
+        .bh-chip.active { background: var(--bh-primary-soft); border-color: var(--bh-primary); color: var(--bh-primary); }
+
+        /* ---------- Auth shell ---------- */
+        .auth-shell { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: 16px 0; }
+        .auth-card { background: #fff; border: 1px solid var(--bh-border); border-radius: 20px; box-shadow: var(--bh-shadow); padding: 32px 24px; width: 100%; }
+        .auth-split { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: var(--bh-shadow-lg); border: 1px solid var(--bh-border); }
+        .auth-split-left { position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1d29 0%, #2d1b3d 100%);
+            color: #fff; padding: 40px 32px; display: flex; flex-direction: column; justify-content: space-between; }
+        .auth-split-left::before { content: ''; position: absolute; top: -80px; right: -60px; width: 240px; height: 240px;
+            background: radial-gradient(circle, rgba(239,91,91,0.55), transparent 70%); border-radius: 50%; }
+        .auth-split-left::after { content: ''; position: absolute; bottom: -100px; left: -60px; width: 260px; height: 260px;
+            background: radial-gradient(circle, rgba(249,168,38,0.35), transparent 70%); border-radius: 50%; }
+        .auth-split-left > * { position: relative; z-index: 2; }
+        .auth-split-left h2 { color: #fff; font-size: 2rem; line-height: 1.1; }
+        .auth-split-right { padding: 40px 32px; }
+
+        /* ---------- Stat cards ---------- */
+        .stat-card { background: #fff; border: 1px solid var(--bh-border); border-radius: var(--bh-radius);
+            padding: 18px; display: flex; gap: 14px; align-items: flex-start;
+            transition: transform .2s ease, box-shadow .2s ease; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--bh-shadow); }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0; }
+        .stat-icon.coral { background: var(--bh-primary-soft); color: var(--bh-primary); }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.emerald { background: #dcfce7; color: #15803d; }
+        .stat-icon.violet { background: #ede9fe; color: #6d28d9; }
+        .stat-icon.sky { background: #e0f2fe; color: #0369a1; }
+        .stat-value { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; line-height: 1; margin: 0; }
+        .stat-label { font-size: .78rem; color: var(--bh-text-muted); margin-top: 4px; font-weight: 500; }
+
+        /* ---------- Slot pill ---------- */
+        .slot-pill { display: inline-block; padding: 8px 14px; border-radius: 10px; background: #fff;
+            border: 1px solid var(--bh-border); font-size: .85rem; font-weight: 600; cursor: pointer;
+            transition: all .12s ease; user-select: none; color: var(--bh-text); }
+        .slot-pill:hover { border-color: var(--bh-primary); color: var(--bh-primary); }
+        .slot-pill.selected { background: var(--bh-primary); border-color: var(--bh-primary); color: #fff; }
+
+        /* ---------- Footer (sticky bottom on desktop) ---------- */
+        .bh-footer {
+            margin-top: 48px; padding: 28px 0;
+            border-top: 1px solid var(--bh-border); background: #fff;
+            color: var(--bh-text-muted); font-size: .85rem;
+            position: sticky; bottom: 0; z-index: 1020;
+            flex-shrink: 0;
+        }
+
+        .fade-up { animation: fadeUp .4s ease both; }
+        @@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ---------- Mobile bottom tab bar ---------- */
+        .bh-tabbar {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 1029;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: saturate(180%) blur(14px);
+            border-top: 1px solid var(--bh-border);
+            display: none;
+            justify-content: space-around;
+            padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+        }
+        .bh-tabbar a {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            gap: 2px; padding: 4px; text-decoration: none; color: var(--bh-text-muted);
+            font-size: .68rem; font-weight: 600;
+        }
+        .bh-tabbar a i { font-size: 1.25rem; }
+        .bh-tabbar a:hover, .bh-tabbar a.active { color: var(--bh-primary); }
+
+        /* ---------- Shop card (home / barbers list) ---------- */
+        .bh-shop-card {
+            background: #fff; border: 1px solid var(--bh-border); border-radius: var(--bh-radius);
+            overflow: hidden; height: 100%; display: flex; flex-direction: column;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .bh-shop-card:hover { transform: translateY(-3px); box-shadow: var(--bh-shadow-lg); }
+        .bh-shop-cover {
+            position: relative; aspect-ratio: 16/10; background: var(--bh-bg);
+            overflow: hidden;
+        }
+        .bh-shop-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .bh-shop-cover-fallback {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--bh-primary), var(--bh-accent));
+            color: #fff; font-size: 3rem;
+        }
+        .bh-distance-pill {
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(255,255,255,0.95); color: var(--bh-text);
+            padding: 5px 11px; border-radius: 999px; font-weight: 600; font-size: .78rem;
+            box-shadow: 0 2px 6px rgba(26,29,41,0.12);
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .bh-distance-pill .bi { color: var(--bh-primary); }
+        .bh-shop-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .bh-shop-name {
+            font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.1rem;
+            margin: 0; line-height: 1.25; color: var(--bh-text);
+        }
+        .bh-shop-meta { font-size: .82rem; color: var(--bh-text-muted); }
+        .bh-shop-foot {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: auto; padding-top: 8px;
+        }
+        .bh-shop-from { font-size: .72rem; color: var(--bh-text-muted); display: block; }
+        .bh-shop-price {
+            font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.2rem; color: var(--bh-text);
+        }
+
+        /* ---------- Offcanvas mobile drawer ---------- */
+        .bh-offcanvas {
+            background: #fff; border: 0;
+            box-shadow: -8px 0 32px rgba(26,29,41,0.12);
+        }
+        .bh-offcanvas .offcanvas-header {
+            padding: 18px 20px; border-bottom: 1px solid var(--bh-border);
+        }
+        .bh-offcanvas .offcanvas-body { padding: 12px; }
+        .bh-offcanvas .nav-section-label {
+            font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--bh-text-muted);
+            padding: 14px 12px 6px;
+        }
+        .bh-offcanvas .nav-link-mobile {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 10px;
+            text-decoration: none; color: var(--bh-text); font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .bh-offcanvas .nav-link-mobile:hover, .bh-offcanvas .nav-link-mobile:focus {
+            background: var(--bh-primary-soft); color: var(--bh-primary);
+        }
+        .bh-offcanvas .nav-link-mobile i {
+            width: 22px; text-align: center; font-size: 1.05rem; color: var(--bh-text-muted);
+        }
+        .bh-offcanvas .nav-link-mobile:hover i { color: var(--bh-primary); }
+        .bh-offcanvas hr { margin: 8px 4px; border-color: var(--bh-border); }
+        .navbar-toggler:focus { box-shadow: none; }
+
+        /* ---------- Tap targets — at least 40px on mobile ---------- */
+        @@media (max-width: 768px) {
+            .bh-hero { padding: 36px 22px; border-radius: 16px; }
+            .bh-hero h1 { font-size: 1.85rem; }
+            .bh-hero p { font-size: 1rem; }
+            .auth-card { padding: 28px 22px; }
+            .auth-split-left, .auth-split-right { padding: 32px 22px; }
+            .section-title { font-size: 1.35rem; }
+            .stat-card { padding: 14px; gap: 12px; }
+            .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+            .stat-value { font-size: 1.3rem; }
+            .btn { padding: .6rem 1.1rem; }
+            .btn-sm { padding: .45rem .9rem; }
+            .bh-card, .card { border-radius: 14px; }
+            .container { padding-left: 14px; padding-right: 14px; }
+
+            .bh-brand span:last-child { display: none; }
+
+            .bh-tabbar { display: flex; }
+            main.bh-main { padding-bottom: calc(var(--bh-tabbar-h) + 16px) !important; }
+
+            .bh-cart-pill-mobile-hide { display: none !important; }
+
+            .bh-avatar-btn span:not(.bh-avatar) { display: none; }
+            .bh-avatar-btn { padding: 3px !important; }
+
+            .bh-notif-panel { min-width: calc(100vw - 32px); max-width: calc(100vw - 32px); }
+
+            .bh-toast-container { top: 70px; right: 12px; left: 12px; max-width: none; }
+            .bh-toast { min-width: 0; max-width: none; }
+
+            /* Footer not sticky on mobile (tab bar takes over) */
+            .bh-footer { position: static; }
+        }
+
+        @@media (max-width: 360px) {
+            body { font-size: 14px; }
+            .bh-hero { padding: 28px 18px; }
+            .bh-hero h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+@{
+    var isLoggedIn = SignInManager.IsSignedIn(User);
+    var isUser = isLoggedIn && User.IsInRole(AppRoles.User);
+    var isBarber = isLoggedIn && User.IsInRole(AppRoles.Admin);
+    var isSuperAdmin = isLoggedIn && User.IsInRole(AppRoles.SuperAdmin);
+}
+
+<nav class="bh-navbar">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <a class="bh-brand" asp-controller="Home" asp-action="Index">
+                <span class="bh-brand-mark"><i class="bi bi-scissors"></i></span>
+                <span>Barber Hub</span>
+            </a>
+
+            @* Desktop only: inline links *@
+            <div class="d-none d-lg-flex flex-grow-1 justify-content-between ms-lg-4">
+                <ul class="navbar-nav d-lg-flex flex-row gap-1 flex-wrap">
+                    <li><a class="bh-nav-link" asp-controller="Barbers" asp-action="Index"><i class="bi bi-scissors"></i> <span>Barbers</span></a></li>
+                    <li><a class="bh-nav-link" asp-controller="Products" asp-action="Index"><i class="bi bi-bag"></i> <span>Products</span></a></li>
+                    @if (isUser)
+                    {
+                        <li><a class="bh-nav-link" asp-controller="Bookings" asp-action="MyBookings"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
+                        <li><a class="bh-nav-link" asp-controller="Orders" asp-action="MyOrders"><i class="bi bi-box-seam"></i> <span>Orders</span></a></li>
+                    }
+                    @if (isBarber)
+                    {
+                        <li class="dropdown">
+                            <a class="bh-nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"><i class="bi bi-shield-check"></i> <span>Barber</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="Earnings"><i class="bi bi-graph-up-arrow me-2"></i>Earnings</a></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="CreateBooking"><i class="bi bi-calendar-plus me-2"></i>Book for Customer</a></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="AddUser"><i class="bi bi-person-plus me-2"></i>Add Customer</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Bookings" asp-action="Manage"><i class="bi bi-calendar-week me-2"></i>Manage Bookings</a></li>
+                                <li><a class="dropdown-item" asp-controller="Products" asp-action="Manage"><i class="bi bi-box-seam me-2"></i>My Products</a></li>
+                                <li><a class="dropdown-item" asp-controller="Orders" asp-action="Manage"><i class="bi bi-receipt me-2"></i>Orders</a></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Customers</a></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="LeaveDays"><i class="bi bi-calendar-x me-2"></i>Leave Days</a></li>
+                            </ul>
+                        </li>
+                    }
+                    @if (isSuperAdmin)
+                    {
+                        <li class="dropdown">
+                            <a class="bh-nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"><i class="bi bi-shield-shaded"></i> <span>SuperAdmin</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="Dashboard"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="Approvals"><i class="bi bi-check2-square me-2"></i>Barber Approvals</a></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="ManageBarbers"><i class="bi bi-shop me-2"></i>Manage Barbers</a></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="ManageUsers"><i class="bi bi-people me-2"></i>Manage Users</a></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="Products"><i class="bi bi-bag me-2"></i>Marketplace Products</a></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="Orders"><i class="bi bi-receipt me-2"></i>Marketplace Orders</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="SuperAdmin" asp-action="AuditLog"><i class="bi bi-shield-shaded me-2"></i>Audit Log</a></li>
+                            </ul>
+                        </li>
+                    }
+                    @if (isLoggedIn)
+                    {
+                        <li><a class="bh-nav-link" asp-controller="Chat" asp-action="Index"><i class="bi bi-chat-dots"></i> <span>Chat</span></a></li>
+                    }
+                </ul>
+
+                <ul class="navbar-nav d-lg-flex flex-row align-items-lg-center gap-2">
+                    @if (isLoggedIn)
+                    {
+                        <li class="dropdown">
+                            <button class="bh-bell-btn" id="bhBellBtn" data-bs-toggle="dropdown" type="button">
+                                <i class="bi bi-bell"></i>
+                                <span class="bh-bell-badge" id="bhBellBadge">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end bh-notif-panel" id="bhNotifPanel">
+                                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color:var(--bh-border)!important;">
+                                    <strong>Notifications</strong>
+                                    <a href="#" id="bhMarkAllRead" class="text-coral text-decoration-none small">Mark all read</a>
+                                </div>
+                                <div id="bhNotifList">
+                                    <div class="text-muted text-center py-4 small">Loading...</div>
+                                </div>
+                            </div>
+                        </li>
+
+                        @if (isUser)
+                        {
+                            <li><a class="bh-cart-pill" asp-controller="Cart" asp-action="Index"><i class="bi bi-bag"></i> Cart</a></li>
+                        }
+                        <li class="dropdown">
+                            @{
+                                var initial = (User.Identity!.Name ?? "U").Substring(0,1).ToUpper();
+                            }
+                            <a class="bh-avatar-btn dropdown-toggle" data-bs-toggle="dropdown" href="#">
+                                <span class="bh-avatar">@initial</span>
+                                <span>@User.Identity!.Name</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" asp-controller="Auth" asp-action="Profile"><i class="bi bi-person me-2"></i>Edit Profile</a></li>
+                                <li><a class="dropdown-item" asp-controller="Auth" asp-action="ChangePassword"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li><a class="bh-nav-link" asp-controller="Auth" asp-action="Login">Login</a></li>
+                        <li><a class="btn btn-primary btn-sm" asp-controller="Auth" asp-action="Register">Get Started</a></li>
+                    }
+                </ul>
+            </div>
+
+            @* Mobile only: bell + hamburger sit together on the right edge *@
+            <div class="d-lg-none d-flex align-items-center gap-2">
+                @if (isLoggedIn)
+                {
+                    <div class="dropdown">
+                        <button class="bh-bell-btn" id="bhBellBtnMobile" data-bs-toggle="dropdown" type="button">
+                            <i class="bi bi-bell"></i>
+                            <span class="bh-bell-badge" id="bhBellBadgeMobile">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end bh-notif-panel" id="bhNotifPanelMobile">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color:var(--bh-border)!important;">
+                                <strong>Notifications</strong>
+                                <a href="#" class="bh-mark-all-read text-coral text-decoration-none small">Mark all read</a>
+                            </div>
+                            <div class="bh-notif-list-mobile">
+                                <div class="text-muted text-center py-4 small">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <button class="navbar-toggler border-0 p-1" type="button"
+                        data-bs-toggle="offcanvas" data-bs-target="#bhMobileNav" aria-label="Open menu">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+@* ---------- Mobile offcanvas drawer ---------- *@
+<div class="offcanvas offcanvas-end bh-offcanvas" tabindex="-1" id="bhMobileNav" aria-labelledby="bhMobileNavLabel" style="width:300px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title mb-0" id="bhMobileNavLabel">
+            @if (isLoggedIn)
+            {
+                <span>Hi, @User.Identity!.Name</span>
+            }
+            else
+            {
+                <span>Menu</span>
+            }
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="nav-section-label">Browse</div>
+        <a class="nav-link-mobile" asp-controller="Home" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-house"></i>Home</a>
+        <a class="nav-link-mobile" asp-controller="Barbers" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-scissors"></i>Find Barbers</a>
+        <a class="nav-link-mobile" asp-controller="Products" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-bag"></i>Products</a>
+
+        @if (isUser)
+        {
+            <div class="nav-section-label">My Activity</div>
+            <a class="nav-link-mobile" asp-controller="Bookings" asp-action="MyBookings" data-bs-dismiss="offcanvas"><i class="bi bi-calendar-check"></i>My Bookings</a>
+            <a class="nav-link-mobile" asp-controller="Orders" asp-action="MyOrders" data-bs-dismiss="offcanvas"><i class="bi bi-box-seam"></i>My Orders</a>
+            <a class="nav-link-mobile" asp-controller="Cart" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-cart"></i>Cart</a>
+            <a class="nav-link-mobile" asp-controller="Chat" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-chat-dots"></i>Chat</a>
+        }
+
+        @if (isBarber)
+        {
+            <div class="nav-section-label">Barber</div>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="Dashboard" data-bs-dismiss="offcanvas"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="Earnings" data-bs-dismiss="offcanvas"><i class="bi bi-graph-up-arrow"></i>Earnings</a>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="CreateBooking" data-bs-dismiss="offcanvas"><i class="bi bi-calendar-plus"></i>Book for Customer</a>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="AddUser" data-bs-dismiss="offcanvas"><i class="bi bi-person-plus"></i>Add Customer</a>
+            <a class="nav-link-mobile" asp-controller="Bookings" asp-action="Manage" data-bs-dismiss="offcanvas"><i class="bi bi-calendar-week"></i>Manage Bookings</a>
+            <a class="nav-link-mobile" asp-controller="Products" asp-action="Manage" data-bs-dismiss="offcanvas"><i class="bi bi-box-seam"></i>My Products</a>
+            <a class="nav-link-mobile" asp-controller="Orders" asp-action="Manage" data-bs-dismiss="offcanvas"><i class="bi bi-receipt"></i>Orders</a>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="Users" data-bs-dismiss="offcanvas"><i class="bi bi-people"></i>Customers</a>
+            <a class="nav-link-mobile" asp-controller="Admin" asp-action="LeaveDays" data-bs-dismiss="offcanvas"><i class="bi bi-calendar-x"></i>Leave Days</a>
+            <a class="nav-link-mobile" asp-controller="Chat" asp-action="Index" data-bs-dismiss="offcanvas"><i class="bi bi-chat-dots"></i>Chat</a>
+        }
+
+        @if (isSuperAdmin)
+        {
+            <div class="nav-section-label">SuperAdmin</div>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="Dashboard" data-bs-dismiss="offcanvas"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="Approvals" data-bs-dismiss="offcanvas"><i class="bi bi-check2-square"></i>Barber Approvals</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="ManageBarbers" data-bs-dismiss="offcanvas"><i class="bi bi-shop"></i>Manage Barbers</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="ManageUsers" data-bs-dismiss="offcanvas"><i class="bi bi-people"></i>Manage Users</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="Products" data-bs-dismiss="offcanvas"><i class="bi bi-bag"></i>Marketplace Products</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="Orders" data-bs-dismiss="offcanvas"><i class="bi bi-receipt"></i>Marketplace Orders</a>
+            <a class="nav-link-mobile" asp-controller="SuperAdmin" asp-action="AuditLog" data-bs-dismiss="offcanvas"><i class="bi bi-shield-shaded"></i>Audit Log</a>
+        }
+
+        @if (isLoggedIn)
+        {
+            <hr/>
+            <div class="nav-section-label">Account</div>
+            <a class="nav-link-mobile" asp-controller="Auth" asp-action="Profile" data-bs-dismiss="offcanvas"><i class="bi bi-person"></i>Edit Profile</a>
+            <a class="nav-link-mobile" asp-controller="Auth" asp-action="ChangePassword" data-bs-dismiss="offcanvas"><i class="bi bi-key"></i>Change Password</a>
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="nav-link-mobile w-100 border-0 bg-transparent text-start" style="color:var(--bh-danger);">
+                    <i class="bi bi-box-arrow-right" style="color:var(--bh-danger);"></i>Logout
+                </button>
+            </form>
+        }
+        else
+        {
+            <hr/>
+            <a class="nav-link-mobile" asp-controller="Auth" asp-action="Login" data-bs-dismiss="offcanvas"><i class="bi bi-box-arrow-in-right"></i>Login</a>
+            <a class="nav-link-mobile" asp-controller="Auth" asp-action="Register" data-bs-dismiss="offcanvas" style="color:var(--bh-primary);"><i class="bi bi-person-plus" style="color:var(--bh-primary);"></i>Get Started</a>
+        }
+    </div>
+</div>
+
+@* ---------- Toaster container ---------- *@
+<div class="bh-toast-container" id="bhToastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<main class="container py-4 fade-up bh-main">
+    @RenderBody()
+</main>
+
+@* ---------- Mobile bottom tab bar ---------- *@
+<nav class="bh-tabbar">
+    <a asp-controller="Home" asp-action="Index"><i class="bi bi-house"></i><span>Home</span></a>
+    <a asp-controller="Barbers" asp-action="Index"><i class="bi bi-scissors"></i><span>Barbers</span></a>
+    <a asp-controller="Products" asp-action="Index"><i class="bi bi-bag"></i><span>Shop</span></a>
+    @if (isUser)
+    {
+        <a asp-controller="Cart" asp-action="Index"><i class="bi bi-cart"></i><span>Cart</span></a>
+    }
+    else if (isBarber)
+    {
+        <a asp-controller="Admin" asp-action="Dashboard"><i class="bi bi-grid"></i><span>Barber</span></a>
+    }
+    else if (isSuperAdmin)
+    {
+        <a asp-controller="SuperAdmin" asp-action="Dashboard"><i class="bi bi-shield-shaded"></i><span>Admin</span></a>
+    }
+    @if (isLoggedIn)
+    {
+        <a asp-controller="Auth" asp-action="Profile"><i class="bi bi-person"></i><span>Profile</span></a>
+    }
+    else
+    {
+        <a asp-controller="Auth" asp-action="Login"><i class="bi bi-person"></i><span>Login</span></a>
+    }
+</nav>
+
+<footer class="bh-footer d-none d-md-block">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="bh-brand mb-2"><span class="bh-brand-mark"><i class="bi bi-scissors"></i></span><span>Barber Hub</span></div>
+                <p class="mb-0">Premium grooming at your fingertips.</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <p class="mb-0">&copy; @DateTime.Now.Year Barber Hub · <a class="text-muted text-decoration-none" asp-controller="Home" asp-action="Privacy">Privacy</a></p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+<script>
+// ---------- Toaster (auto-dismiss) ----------
+window.bhToast = function(message, kind /* 'success' | 'error' | 'info' */) {
+    if (!message) return;
+    kind = kind || 'info';
+    const container = document.getElementById('bhToastContainer');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'bh-toast bh-toast-' + kind;
+    const icon = kind === 'success' ? 'bi-check-circle' : (kind === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle');
+    el.innerHTML =
+        '<i class="bi ' + icon + ' bh-toast-icon"></i>' +
+        '<div class="bh-toast-body"></div>' +
+        '<button class="bh-toast-close" aria-label="Close">&times;</button>';
+    el.querySelector('.bh-toast-body').textContent = message;
+    el.querySelector('.bh-toast-close').addEventListener('click', () => dismiss(el));
+    container.appendChild(el);
+    const timer = setTimeout(() => dismiss(el), 4000);
+    function dismiss(node) {
+        clearTimeout(timer);
+        if (!node.parentNode) return;
+        node.classList.add('fade-out');
+        setTimeout(() => node.remove(), 250);
+    }
+};
+
+// Auto-fire from TempData (server-rendered into JS object below)
+(function() {
+    @if (TempData["Success"] is not null)
+    {
+        <text>window.bhToast(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"]?.ToString() ?? "")), 'success');</text>
+    }
+    @if (TempData["Error"] is not null)
+    {
+        <text>window.bhToast(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]?.ToString() ?? "")), 'error');</text>
+    }
+})();
+</script>
+
+@if (isLoggedIn)
+{
+<script>
+(function() {
+    const badge = document.getElementById('bhBellBadge');
+    const badgeMobile = document.getElementById('bhBellBadgeMobile');
+    const list = document.getElementById('bhNotifList');
+    const listMobile = document.querySelector('.bh-notif-list-mobile');
+    const markAllBtns = [
+        document.getElementById('bhMarkAllRead'),
+        ...document.querySelectorAll('.bh-mark-all-read')
+    ].filter(Boolean);
+    const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    const csrf = tokenEl ? tokenEl.value : '';
+
+    function timeAgo(dateStr) {
+        const d = new Date(dateStr); const s = (Date.now() - d.getTime()) / 1000;
+        if (s < 60) return 'just now';
+        if (s < 3600) return Math.floor(s/60) + 'm';
+        if (s < 86400) return Math.floor(s/3600) + 'h';
+        return Math.floor(s/86400) + 'd';
+    }
+    function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function setBadge(n) {
+        [badge, badgeMobile].forEach(b => {
+            if (!b) return;
+            if (n > 0) { b.classList.add('show'); b.textContent = n > 9 ? '9+' : n; }
+            else { b.classList.remove('show'); }
+        });
+    }
+
+    function buildHtml(items) {
+        if (!items || items.length === 0) {
+            return '<div class="text-muted text-center py-4 small">You\'re all caught up.</div>';
+        }
+        return items.map(n => `
+            <a href="${n.linkUrl || '#'}" data-id="${n.id}" class="bh-notif-item text-decoration-none text-reset">
+                <div class="bh-notif-icon"><i class="bi bi-bell"></i></div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">${escapeHtml(n.title)}</div>
+                    <div class="text-muted small">${escapeHtml(n.message)}</div>
+                    <div class="text-muted" style="font-size:.7rem;margin-top:2px;">${timeAgo(n.createdAt)}</div>
+                </div>
+            </a>`).join('');
+    }
+
+    function attachClickHandlers(container) {
+        container.querySelectorAll('.bh-notif-item').forEach(a => {
+            a.addEventListener('click', async (ev) => {
+                const id = a.getAttribute('data-id');
+                const href = a.getAttribute('href') || '#';
+                if (href === '#') {
+                    ev.preventDefault();
+                    await markRead(id);
+                    a.classList.add('fade-out');
+                    setTimeout(() => a.remove(), 350);
+                    bumpBadgeDown();
+                    return;
+                }
+                ev.preventDefault();
+                markRead(id).finally(() => { window.location.href = href; });
+            });
+        });
+    }
+
+    function renderNotifs(items, unread) {
+        setBadge(unread);
+        const html = buildHtml(items);
+        if (list) { list.innerHTML = html; attachClickHandlers(list); }
+        if (listMobile) { listMobile.innerHTML = html; attachClickHandlers(listMobile); }
+    }
+
+    function bumpBadgeDown() {
+        const cur = parseInt((badge?.textContent) || '0', 10) || 0;
+        setBadge(Math.max(0, cur - 1));
+        const remaining = (list?.querySelectorAll('.bh-notif-item:not(.fade-out)').length) || 0;
+        if (remaining === 0 && list) {
+            setTimeout(() => { list.innerHTML = '<div class="text-muted text-center py-4 small">You\'re all caught up.</div>'; }, 350);
+        }
+    }
+
+    async function markRead(id) {
+        try {
+            const fd = new FormData();
+            fd.append('id', id);
+            if (csrf) fd.append('__RequestVerificationToken', csrf);
+            await fetch('/Notifications/MarkRead', { method: 'POST', credentials: 'same-origin', body: fd });
+        } catch (e) { /* ignore */ }
+    }
+
+    async function loadNotifs() {
+        try {
+            const r = await fetch('/Notifications/Recent', { credentials: 'same-origin' });
+            const data = await r.json();
+            renderNotifs(data.items, data.unreadCount);
+        } catch (e) { /* ignore */ }
+    }
+
+    markAllBtns.forEach(btn => btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const fd = new FormData();
+        if (csrf) fd.append('__RequestVerificationToken', csrf);
+        await fetch('/Notifications/MarkAllRead', { method: 'POST', credentials: 'same-origin', body: fd });
+        loadNotifs();
+    }));
+
+    loadNotifs();
+
+    try {
+        const conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
+        conn.on('ReceiveNotification', (n) => {
+            if (window.bhToast) window.bhToast(n.title + ' — ' + n.message, 'info');
+            loadNotifs();
+        });
+        conn.start().catch(() => {});
+    } catch (e) { /* ignore */ }
+})();
+</script>
+}
+
+@await RenderSectionAsync("Scripts", required: false)
+
+<script>
+// Register service worker (PWA + Web Push). Runs everywhere it can.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+}
+</script>
+
+@if (isLoggedIn)
+{
+<script>
+// Web Push subscription — runs once after we have a SW registration AND a VAPID key.
+(async function() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+        const reg = await navigator.serviceWorker.ready;
+
+        const keyResp = await fetch('/Push/VapidKey', { credentials: 'same-origin' });
+        const cfg = await keyResp.json();
+        if (!cfg.configured) return;  // Web Push not enabled server-side
+
+        // Permission — only ask once after a user gesture or proactively on logged-in pages
+        let permission = Notification.permission;
+        if (permission === 'default') {
+            permission = await Notification.requestPermission();
+        }
+        if (permission !== 'granted') return;
+
+        // Try to reuse an existing subscription, else create a new one
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(cfg.publicKey)
+            });
+        }
+
+        const json = sub.toJSON();
+        const fd = new FormData();
+        fd.append('Endpoint', json.endpoint);
+        fd.append('P256dh', json.keys.p256dh);
+        fd.append('Auth', json.keys.auth);
+        const t = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (t) fd.append('__RequestVerificationToken', t.value);
+        await fetch('/Push/Subscribe', { method: 'POST', credentials: 'same-origin', body: fd });
+    } catch (e) { /* ignore */ }
+})();
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+    return out;
+}
+</script>
+}
+
+</body>
+</html>

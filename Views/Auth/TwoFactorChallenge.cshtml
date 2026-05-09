@@ -1,0 +1,24 @@
+@{ ViewData["Title"] = "Enter authentication code"; }
+
+<div class="auth-shell">
+    <div class="col-md-7 col-lg-5">
+        <div class="auth-card">
+            <h2 class="mb-1">Verify it's you</h2>
+            <p class="text-muted mb-4">Open your authenticator app and enter the 6-digit code.</p>
+
+            <partial name="_ValidationSummary" />
+            <form asp-action="TwoFactorChallenge" method="post">
+                @Html.AntiForgeryToken()
+                <label class="form-label">Authentication code</label>
+                <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                       maxlength="6" autofocus class="form-control text-center"
+                       style="font-size:1.6rem;letter-spacing:.5em;font-weight:700;" />
+                <button class="btn btn-primary w-100 mt-3">Verify & login</button>
+            </form>
+
+            <div class="text-muted small mt-3 text-center">
+                <i class="bi bi-shield-lock-fill me-1 text-coral"></i>Two-step verification active
+            </div>
+        </div>
+    </div>
+</div>

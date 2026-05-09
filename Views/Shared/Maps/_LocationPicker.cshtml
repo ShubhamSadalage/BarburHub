@@ -1,0 +1,99 @@
+@using BarberHub.Web.Shared.Config
+@using Microsoft.Extensions.Options
+@inject IOptions<FeatureFlags> FF
+@inject IOptions<GoogleOptions> GO
+@{
+    var enabled = FF.Value.MapsEnabled && !string.IsNullOrEmpty(GO.Value.Maps.ApiKey);
+    // Caller passes initial lat/lng via ViewData
+    var lat = ViewData["LocationLat"] as double?;
+    var lng = ViewData["LocationLng"] as double?;
+}
+
+@if (!enabled)
+{
+    <div class="alert alert-info small mb-0">
+        <i class="bi bi-info-circle me-1"></i>
+        Map picker will appear once <code>Google:Maps:ApiKey</code> is set. For now, you can still save coordinates manually.
+    </div>
+}
+else
+{
+    <div class="d-flex gap-2 mb-2 flex-wrap">
+        <input id="bhPlacesSearch" type="text" class="form-control" placeholder="Search a place, area, village…" style="max-width:380px;" />
+        <button type="button" class="btn btn-outline-primary" id="bhUseDeviceLoc"><i class="bi bi-crosshair me-1"></i>Use my location</button>
+    </div>
+    <div id="bhPickerMap" class="bh-card" style="width:100%;height:340px;border-radius:var(--bh-radius);overflow:hidden;"></div>
+    <p class="text-muted small mb-0 mt-2">
+        <i class="bi bi-hand-index me-1"></i>Tap the map or drag the pin to set your shop location.
+    </p>
+
+    <partial name="Maps/_GoogleMapsLoader" />
+
+    <script>
+        (async function() {
+            await window.bhMapsReady();
+            const el = document.getElementById('bhPickerMap');
+            if (!el) return;
+
+            const initial = {
+                lat: @(lat?.ToString("F6", System.Globalization.CultureInfo.InvariantCulture) ?? "20.5937"),
+                lng: @(lng?.ToString("F6", System.Globalization.CultureInfo.InvariantCulture) ?? "78.9629")
+            };
+            const haveInitial = @((lat.HasValue && lng.HasValue) ? "true" : "false");
+
+            const map = new google.maps.Map(el, {
+                center: initial,
+                zoom: haveInitial ? 15 : 5,
+                streetViewControl: false,
+                mapTypeControl: false
+            });
+            const marker = new google.maps.Marker({
+                position: initial,
+                map,
+                draggable: true
+            });
+
+            function setLatLng(latLng) {
+                document.querySelector('input[name="Latitude"]').value = latLng.lat().toFixed(6);
+                document.querySelector('input[name="Longitude"]').value = latLng.lng().toFixed(6);
+            }
+            if (haveInitial) setLatLng(marker.getPosition());
+
+            map.addListener('click', (e) => {
+                marker.setPosition(e.latLng);
+                setLatLng(e.latLng);
+            });
+            marker.addListener('dragend', () => setLatLng(marker.getPosition()));
+
+            // Places autocomplete
+            const input = document.getElementById('bhPlacesSearch');
+            if (input && google.maps.places) {
+                const ac = new google.maps.places.Autocomplete(input, { fields: ['geometry', 'formatted_address', 'name'] });
+                ac.bindTo('bounds', map);
+                ac.addListener('place_changed', () => {
+                    const place = ac.getPlace();
+                    if (!place.geometry) return;
+                    if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
+                    else { map.setCenter(place.geometry.location); map.setZoom(15); }
+                    marker.setPosition(place.geometry.location);
+                    setLatLng(place.geometry.location);
+                    const labelEl = document.querySelector('input[name="LocationLabel"]');
+                    if (labelEl) labelEl.value = place.formatted_address || place.name || labelEl.value;
+                });
+            }
+
+            // "Use my location" button
+            const useLoc = document.getElementById('bhUseDeviceLoc');
+            useLoc?.addEventListener('click', () => {
+                if (!navigator.geolocation) return;
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const ll = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+                    map.setCenter(ll);
+                    map.setZoom(15);
+                    marker.setPosition(ll);
+                    setLatLng(ll);
+                });
+            });
+        })();
+    </script>
+}

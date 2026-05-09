@@ -1,0 +1,97 @@
+@model List<LeaveDayDto>
+@{ ViewData["Title"] = "Leave Days"; }
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Leave Days & Weekly Holiday</h2>
+        <p class="section-subtitle mb-0">Block specific dates and set your weekly off day.</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="bh-card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon amber"><i class="bi bi-calendar-week"></i></div>
+                <div>
+                    <h5 class="mb-0">Weekly Holiday</h5>
+                    <small class="text-muted">Currently: <strong class="text-coral">@(ViewBag.WeeklyHoliday?.ToString() ?? "None set")</strong></small>
+                </div>
+            </div>
+            <form asp-action="SetWeeklyHoliday" method="post" class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <select name="WeeklyHoliday" class="form-select" asp-items="Html.GetEnumSelectList<DayOfWeek>()"></select>
+                <button class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Set</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="bh-card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon coral"><i class="bi bi-calendar-x"></i></div>
+                <div>
+                    <h5 class="mb-0">Add Leave Day</h5>
+                    <small class="text-muted">Block a specific date from new bookings.</small>
+                </div>
+            </div>
+            <form asp-action="AddLeaveDay" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label">Date</label>
+                    <input name="LeaveDate" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reason (optional)</label>
+                    <input name="Reason" class="form-control" placeholder="e.g. Diwali holiday" />
+                </div>
+                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Add Leave Day</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h5 class="mb-3">Upcoming & Recent Leaves</h5>
+    @if (!Model.Any())
+    {
+        <div class="bh-card p-5 text-center">
+            <div class="stat-icon emerald mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-calendar-check"></i></div>
+            <h5>No leaves set</h5>
+            <p class="text-muted mb-0">Add a leave day above to block specific dates.</p>
+        </div>
+    }
+    else
+    {
+        <div class="bh-card p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Reason</th>
+                            <th class="pe-4 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var l in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold">@l.LeaveDate.ToString("ddd, MMM dd, yyyy")</div>
+                            </td>
+                            <td class="text-muted">@(string.IsNullOrEmpty(l.Reason) ? "—" : l.Reason)</td>
+                            <td class="pe-4 text-end">
+                                <form asp-action="RemoveLeaveDay" asp-route-id="@l.Id" method="post" class="d-inline" onsubmit="return confirm('Remove this leave day?');">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

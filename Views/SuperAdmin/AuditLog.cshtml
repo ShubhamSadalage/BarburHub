@@ -1,0 +1,60 @@
+@model List<BarberHub.Web.Domain.Entities.AuditLog>
+@{
+    ViewData["Title"] = "Audit Log";
+    int page = (int)(ViewBag.Page ?? 1);
+    bool hasMore = (bool)(ViewBag.HasMore ?? false);
+    int total = (int)(ViewBag.Total ?? 0);
+}
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Audit Log</h2>
+        <p class="section-subtitle mb-0">Sensitive admin actions on this platform.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2">@total entries</span>
+</div>
+
+<div class="bh-card p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">When</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th class="pe-4">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var a in Model)
+            {
+                <tr>
+                    <td class="ps-4 small">@a.CreatedAt.ToString("MMM dd, yyyy · HH:mm")</td>
+                    <td>
+                        <div class="fw-semibold">@a.ActorEmail</div>
+                        <small class="text-muted">@a.ActorRole</small>
+                    </td>
+                    <td><code>@a.Action</code></td>
+                    <td><div class="small">@(a.TargetType ?? "")</div><div class="text-muted small" style="word-break:break-all;">@(a.TargetId ?? "")</div></td>
+                    <td class="pe-4 small text-muted">@a.Details</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">Page @(page)</div>
+    <div class="d-flex gap-2">
+        @if (page > 1)
+        {
+            <a asp-action="AuditLog" asp-route-page="@(page - 1)" class="btn btn-light btn-sm">Previous</a>
+        }
+        @if (hasMore)
+        {
+            <a asp-action="AuditLog" asp-route-page="@(page + 1)" class="btn btn-light btn-sm">Next</a>
+        }
+    </div>
+</div>

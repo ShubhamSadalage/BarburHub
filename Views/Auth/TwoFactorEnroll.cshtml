@@ -1,0 +1,39 @@
+@model BarberHub.Web.Shared.Services.TwoFactorSetupDto
+@{ ViewData["Title"] = "Set up two-factor authentication"; }
+
+<div class="auth-shell">
+    <div class="col-md-7 col-lg-6">
+        <div class="auth-card">
+            <h2 class="mb-1">Set up 2-step verification</h2>
+            <p class="text-muted mb-3">SuperAdmin accounts must use a second factor at every login.</p>
+
+            <ol class="small text-muted mb-3" style="line-height:1.7;">
+                <li>Install <strong>Google Authenticator</strong> or <strong>Authy</strong> on your phone.</li>
+                <li>Scan this QR code, or enter the secret manually.</li>
+                <li>Enter the 6-digit code below to confirm.</li>
+            </ol>
+
+            <div class="text-center mb-3">
+                <img src="@Model.QrCodePngDataUri" alt="QR code" style="width:220px;height:220px;border-radius:12px;border:1px solid var(--bh-border);" />
+            </div>
+            <div class="bh-card p-3 mb-3" style="background:var(--bh-bg);">
+                <small class="text-muted d-block mb-1">Manual key</small>
+                <code style="font-size:1rem;letter-spacing:.18em;">@Model.Secret</code>
+            </div>
+
+            <partial name="_ValidationSummary" />
+            <form asp-action="TwoFactorEnroll" method="post">
+                @Html.AntiForgeryToken()
+                <label class="form-label">Verification code</label>
+                <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                       maxlength="6" autofocus class="form-control text-center"
+                       style="font-size:1.6rem;letter-spacing:.5em;font-weight:700;" />
+                <button class="btn btn-primary w-100 mt-3">Confirm & continue</button>
+            </form>
+
+            <div class="text-muted small mt-3 text-center">
+                <i class="bi bi-shield-lock me-1"></i>You'll need this every time you sign in.
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,87 @@
+@using BarberHub.Web.Domain.Entities
+@model List<BarberHub.Web.Features.SuperAdmin.PendingBarberDto>
+@{ ViewData["Title"] = "Barber Approvals"; }
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Barber Approvals</h2>
+        <p class="section-subtitle mb-0">Review pending barber registrations.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2"><i class="bi bi-shop me-1"></i>@Model.Count requests</span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon emerald mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-check2-circle"></i></div>
+        <h5>All caught up</h5>
+        <p class="text-muted mb-0">No barbers are currently waiting for approval.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var b in Model)
+        {
+            <div class="col-12 col-lg-6">
+                <div class="bh-card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+                        <div>
+                            <h5 class="mb-1">@b.ShopName</h5>
+                            <div class="text-muted small">by @b.FullName</div>
+                        </div>
+                        @if (b.Status == BarberApprovalStatus.Pending)
+                        {
+                            <span class="badge bg-warning">Pending</span>
+                        }
+                        else if (b.Status == BarberApprovalStatus.Rejected)
+                        {
+                            <span class="badge bg-danger">Rejected</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(b.ShopDescription))
+                    {
+                        <p class="text-muted small mb-3">@b.ShopDescription</p>
+                    }
+                    <div class="d-flex flex-column gap-1 small mb-3">
+                        <div><i class="bi bi-envelope text-coral me-2"></i>@b.Email</div>
+                        @if (!string.IsNullOrEmpty(b.PhoneNumber))
+                        {
+                            <div><i class="bi bi-telephone text-coral me-2"></i>@b.PhoneNumber</div>
+                        }
+                        <div><i class="bi bi-geo-alt text-coral me-2"></i>@b.Address, @b.City</div>
+                        <div><i class="bi bi-calendar3 text-coral me-2"></i>Requested @(b.RequestedAt?.ToString("MMM dd, yyyy · HH:mm") ?? "-")</div>
+                    </div>
+
+                    @if (b.Status == BarberApprovalStatus.Rejected && !string.IsNullOrEmpty(b.RejectionReason))
+                    {
+                        <div class="alert alert-danger small mb-3">Reason: @b.RejectionReason</div>
+                    }
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (b.Status != BarberApprovalStatus.Approved)
+                        {
+                            <form asp-action="Approve" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="barberId" value="@b.Id" />
+                                <button class="btn btn-success btn-sm"><i class="bi bi-check2 me-1"></i>Approve</button>
+                            </form>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="collapse" data-bs-target="#reject-@b.Id">
+                                <i class="bi bi-x me-1"></i>Reject
+                            </button>
+                        }
+                    </div>
+
+                    <div class="collapse mt-3" id="reject-@b.Id">
+                        <form asp-action="Reject" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="BarberId" value="@b.Id" />
+                            <textarea name="Reason" class="form-control mb-2" rows="2" placeholder="Reason for rejection (visible to barber)" required></textarea>
+                            <button class="btn btn-danger btn-sm">Confirm Reject</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

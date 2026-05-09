@@ -1,0 +1,100 @@
+@model List<BookingListItemDto>
+@{ ViewData["Title"] = "Manage Bookings"; }
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Manage Bookings</h2>
+        <p class="section-subtitle mb-0">Accept, reject, or complete customer appointments.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2"><i class="bi bi-calendar-week me-1"></i>@Model.Count total</span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon amber mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-calendar-x"></i></div>
+        <h5>No bookings yet</h5>
+        <p class="text-muted mb-0">Customer bookings will appear here once they start coming in.</p>
+    </div>
+}
+else
+{
+    <div class="bh-card p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Customer</th>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th class="pe-4 text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bh-avatar" style="width:36px;height:36px;font-size:.9rem;">@(string.IsNullOrEmpty(b.UserName) ? "U" : b.UserName.Substring(0,1).ToUpper())</div>
+                                <div>
+                                    <div class="fw-semibold">@b.UserName</div>
+                                    <small class="text-muted">@b.UserPhone</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@b.ServiceName</td>
+                        <td>
+                            <div class="fw-semibold">@b.AppointmentDate.ToString("ddd, MMM dd")</div>
+                            <small class="text-muted">@b.StartTime.ToString("HH:mm") – @b.EndTime.ToString("HH:mm")</small>
+                        </td>
+                        <td class="fw-semibold">₹@b.TotalAmount</td>
+                        <td>
+                            @{
+                                var badge = b.Status switch {
+                                    BookingStatus.Pending => "bg-warning",
+                                    BookingStatus.Accepted => "bg-success",
+                                    BookingStatus.Rejected => "bg-danger",
+                                    BookingStatus.Completed => "bg-primary",
+                                    BookingStatus.Cancelled => "bg-secondary",
+                                    _ => "bg-light"
+                                };
+                            }
+                            <span class="badge @badge">@b.Status</span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            @if (b.Status == BookingStatus.Pending)
+                            {
+                                <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="BookingId" value="@b.Id" />
+                                    <input type="hidden" name="NewStatus" value="@((int)BookingStatus.Accepted)" />
+                                    <button class="btn btn-sm btn-success"><i class="bi bi-check"></i> Accept</button>
+                                </form>
+                                <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="BookingId" value="@b.Id" />
+                                    <input type="hidden" name="NewStatus" value="@((int)BookingStatus.Rejected)" />
+                                    <input type="hidden" name="RejectionReason" value="Not available" />
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i> Reject</button>
+                                </form>
+                            }
+                            @if (b.Status == BookingStatus.Accepted)
+                            {
+                                <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="BookingId" value="@b.Id" />
+                                    <input type="hidden" name="NewStatus" value="@((int)BookingStatus.Completed)" />
+                                    <button class="btn btn-sm btn-primary"><i class="bi bi-check2-all"></i> Mark Done</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,0 +1,76 @@
+@model List<ProductListItemDto>
+@{ ViewData["Title"] = "Manage Products"; }
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Manage Products</h2>
+        <p class="section-subtitle mb-0">Add, edit, and manage your store inventory.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Product</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon coral mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-bag-plus"></i></div>
+        <h5>No products yet</h5>
+        <p class="text-muted mb-3">Add your first product to start selling.</p>
+        <a asp-action="Create" class="btn btn-primary">Add Product</a>
+    </div>
+}
+else
+{
+    <div class="bh-card p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Discount</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th class="pe-4 text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                @if (!string.IsNullOrEmpty(p.ImageUrl))
+                                {
+                                    <img src="@p.ImageUrl" style="width:48px;height:48px;object-fit:cover;border-radius:10px;" />
+                                }
+                                else
+                                {
+                                    <div style="width:48px;height:48px;background:var(--bh-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted"></i></div>
+                                }
+                                <strong>@p.Name</strong>
+                            </div>
+                        </td>
+                        <td>@p.Category</td>
+                        <td class="fw-semibold">₹@p.Price</td>
+                        <td>@(p.DiscountPercentage.HasValue ? $"{p.DiscountPercentage}%" : "-")</td>
+                        <td>@p.StockQuantity</td>
+                        <td>
+                            <span class="badge @(p.IsActive ? "bg-success" : "bg-secondary")">
+                                @(p.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this product?');">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

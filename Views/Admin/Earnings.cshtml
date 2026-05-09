@@ -1,0 +1,132 @@
+@model BarberHub.Web.Features.Admin.EarningsDto
+@{
+    ViewData["Title"] = "Earnings";
+    var from = (DateOnly)ViewBag.From;
+    var to = (DateOnly)ViewBag.To;
+    var maxAmount = Model.DailyBreakdown.Any() ? Model.DailyBreakdown.Max(d => d.Amount) : 1m;
+}
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Earnings</h2>
+        <p class="section-subtitle mb-0">Track your income from accepted and completed bookings.</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon coral"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <div class="stat-value">₹@Model.TotalEarnings.ToString("N0")</div>
+                <div class="stat-label">Total Earned</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon emerald"><i class="bi bi-sun"></i></div>
+            <div>
+                <div class="stat-value">₹@Model.TodayEarnings.ToString("N0")</div>
+                <div class="stat-label">Today</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-calendar-week"></i></div>
+            <div>
+                <div class="stat-value">₹@Model.ThisWeekEarnings.ToString("N0")</div>
+                <div class="stat-label">This Week</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon violet"><i class="bi bi-calendar3"></i></div>
+            <div>
+                <div class="stat-value">₹@Model.ThisMonthEarnings.ToString("N0")</div>
+                <div class="stat-label">This Month</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="bh-card p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+            <label class="form-label">From</label>
+            <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">To</label>
+            <input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-12 col-md-4">
+            <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Apply</button>
+        </div>
+    </div>
+</form>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="bh-card p-4 h-100">
+            <h5 class="mb-3"><i class="bi bi-bar-chart text-coral me-2"></i>Day-wise Earnings</h5>
+            @if (!Model.DailyBreakdown.Any())
+            {
+                <p class="text-muted mb-0">No earnings in selected range.</p>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var d in Model.DailyBreakdown)
+                    {
+                        var pct = (double)(d.Amount / maxAmount) * 100;
+                        <div>
+                            <div class="d-flex justify-content-between small">
+                                <span class="fw-semibold">@d.Date.ToString("ddd, MMM dd")</span>
+                                <span><span class="text-muted">@d.BookingsCount booking@(d.BookingsCount == 1 ? "" : "s") · </span><strong>₹@d.Amount.ToString("N0")</strong></span>
+                            </div>
+                            <div style="height:8px;background:var(--bh-bg);border-radius:999px;overflow:hidden;margin-top:4px;">
+                                <div style="height:100%;width:@($"{pct:F1}%");background:linear-gradient(90deg, var(--bh-primary), var(--bh-accent));border-radius:999px;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="bh-card p-4 h-100">
+            <h5 class="mb-3"><i class="bi bi-pie-chart text-coral me-2"></i>By Service</h5>
+            @if (!Model.ByService.Any())
+            {
+                <p class="text-muted mb-0">No earnings in selected range.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr><th>Service</th><th class="text-end">Count</th><th class="text-end">Earned</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.ByService)
+                            {
+                                <tr>
+                                    <td>@s.ServiceName</td>
+                                    <td class="text-end">@s.Count</td>
+                                    <td class="text-end fw-semibold">₹@s.Amount.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="text-muted small mt-3">
+    <i class="bi bi-info-circle me-1"></i>Earnings include both <strong>Accepted</strong> (upcoming) and <strong>Completed</strong> bookings.
+</div>

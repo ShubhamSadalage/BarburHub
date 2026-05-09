@@ -1,0 +1,27 @@
+@using BarberHub.Web.Shared.Config
+@using Microsoft.Extensions.Options
+@inject IOptions<FeatureFlags> FF
+@inject IOptions<GoogleOptions> GO
+@{
+    var enabled = FF.Value.MapsEnabled && !string.IsNullOrEmpty(GO.Value.Maps.ApiKey);
+}
+@if (enabled)
+{
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=@(GO.Value.Maps.ApiKey)&libraries=places&loading=async&callback=bhMapsReady"></script>
+    <script>
+        // Resolved when Maps is fully loaded so any partial can `await window.bhMapsReady()`
+        window.bhMapsReady = window.bhMapsReady || (function() {
+            let resolveFn;
+            const promise = new Promise(r => { resolveFn = r; });
+            // Google calls this name as the callback; we use it to resolve the promise instead.
+            window._bhMapsReadyResolve = resolveFn;
+            const checker = function() {
+                if (window.google && window.google.maps) { resolveFn(); }
+                else setTimeout(checker, 50);
+            };
+            checker();
+            return () => promise;
+        })();
+    </script>
+}

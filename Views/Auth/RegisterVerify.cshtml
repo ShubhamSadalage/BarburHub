@@ -1,0 +1,51 @@
+@model RegisterVerifyDto
+@{
+    ViewData["Title"] = "Verify your account";
+}
+
+<div class="auth-shell">
+    <div class="auth-card" style="max-width:560px;">
+        <div class="text-center mb-3">
+            <div class="stat-icon coral mx-auto mb-2" style="width:60px;height:60px;font-size:1.6rem;">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3 class="mb-1">Verify it's you</h3>
+            <p class="text-muted mb-0">
+                We sent two codes —
+                one to <strong>@Model.Email</strong> and one to <strong>@Model.PhoneNumber</strong>.
+                Enter both to finish creating your account.
+            </p>
+        </div>
+
+        <partial name="_ValidationSummary" />
+        <form asp-action="RegisterVerify" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="Email" type="hidden" />
+            <input asp-for="PhoneNumber" type="hidden" />
+
+            <div class="mb-3">
+                <label asp-for="EmailCode" class="form-label"><i class="bi bi-envelope text-coral me-1"></i>Email code</label>
+                <input asp-for="EmailCode" class="form-control text-center"
+                       inputmode="numeric" autocomplete="one-time-code" maxlength="8"
+                       style="font-size:1.4rem;letter-spacing:.45em;font-weight:700;" />
+                <span asp-validation-for="EmailCode" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="MobileCode" class="form-label"><i class="bi bi-phone text-coral me-1"></i>Mobile code</label>
+                <input asp-for="MobileCode" class="form-control text-center"
+                       inputmode="numeric" autocomplete="one-time-code" maxlength="8"
+                       style="font-size:1.4rem;letter-spacing:.45em;font-weight:700;" />
+                <span asp-validation-for="MobileCode" class="text-danger small"></span>
+            </div>
+
+            <button class="btn btn-primary w-100 btn-lg">Verify & create account</button>
+        </form>
+
+        <div class="mt-3 text-center small">
+            <a asp-action="Register" class="text-coral text-decoration-none fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i>Back, edit details
+            </a>
+        </div>
+    </div>
+</div>

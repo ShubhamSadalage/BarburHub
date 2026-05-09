@@ -1,0 +1,68 @@
+@{ ViewData["Title"] = "Payment"; }
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <h2 class="section-title">Complete Your Payment</h2>
+        <p class="section-subtitle">Your details are encrypted and secure.</p>
+
+        <div class="bh-card p-4 p-md-5">
+            <div id="payment-element" class="mb-4">
+                <!-- Stripe Payment Element injected here -->
+            </div>
+            <button id="submitBtn" class="btn btn-primary w-100 btn-lg">
+                <span id="spinner" class="spinner-border spinner-border-sm me-2 d-none"></span>
+                <span id="btnText"><i class="bi bi-lock me-1"></i> Pay Now</span>
+            </button>
+            <div id="errorMsg" class="text-danger small mt-3"></div>
+            <div class="text-muted small text-center mt-3">
+                <i class="bi bi-shield-check me-1"></i> Powered by Stripe
+            </div>
+        </div>
+
+        <div class="bh-card p-3 mt-3" style="background:var(--bh-bg);">
+            <div class="small">
+                <strong class="text-coral">Test card:</strong>
+                4242 4242 4242 4242 · any future date · any CVC · any ZIP
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe('@ViewBag.PublishableKey');
+    const clientSecret = '@ViewBag.ClientSecret';
+    const orderId = '@ViewBag.OrderId';
+
+    const elements = stripe.elements({ clientSecret });
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    const errorMsg = document.getElementById('errorMsg');
+
+    submitBtn.addEventListener('click', async () => {
+        spinner.classList.remove('d-none');
+        btnText.textContent = 'Processing...';
+        submitBtn.disabled = true;
+        errorMsg.textContent = '';
+
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: window.location.origin + '/Orders/Success/' + orderId
+            }
+        });
+
+        if (error) {
+            errorMsg.textContent = error.message;
+            spinner.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-lock me-1"></i> Pay Now';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+}

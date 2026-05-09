@@ -1,0 +1,83 @@
+@using BarberHub.Web.Domain.Entities
+@model List<OrderListItemDto>
+@{
+    ViewData["Title"] = "Orders";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Orders</h2>
+        <p class="section-subtitle mb-0">All customer orders for your shop.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2"><i class="bi bi-receipt me-1"></i>@Model.Count total</span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon amber mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-receipt"></i></div>
+        <h5>No orders yet</h5>
+        <p class="text-muted mb-0">Customer orders will appear here once they start coming in.</p>
+    </div>
+}
+else
+{
+    <div class="bh-card p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Order #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th class="pe-4 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model)
+                    {
+                        <tr>
+                            <td class="ps-4"><strong>@o.OrderNumber</strong></td>
+                            <td>
+                                <div class="fw-semibold">@o.UserName</div>
+                                <small class="text-muted">@o.UserEmail</small>
+                            </td>
+                            <td class="small">@o.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td>@o.ItemCount</td>
+                            <td class="fw-semibold">₹@o.TotalAmount</td>
+                            <td>
+                                @if (o.PaymentMethod == PaymentMethod.CashOnDelivery)
+                                {
+                                    <span class="badge bg-warning"><i class="bi bi-cash me-1"></i>COD</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary"><i class="bi bi-credit-card me-1"></i>Online</span>
+                                }
+                            </td>
+                            <td><span class="badge @(o.Status == OrderStatus.Paid ? "bg-success" : "bg-warning")">@o.Status</span></td>
+                            <td class="pe-4 text-end">
+                                @if (o.PaymentMethod == PaymentMethod.CashOnDelivery && o.Status != OrderStatus.Paid)
+                                {
+                                    <form asp-controller="Orders" asp-action="MarkAsPaid" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@o.Id" />
+                                        <button class="btn btn-success btn-sm"><i class="bi bi-cash-stack me-1"></i>Mark Paid</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

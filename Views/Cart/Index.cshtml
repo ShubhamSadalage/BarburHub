@@ -1,0 +1,79 @@
+@model CartSummaryDto
+@{ ViewData["Title"] = "Cart"; }
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Your Cart</h2>
+        <p class="section-subtitle mb-0">@(Model.Items.Count == 0 ? "Your cart is empty." : $"{Model.Items.Sum(i => i.Quantity)} items ready to check out.")</p>
+    </div>
+    <a asp-controller="Products" asp-action="Index" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i> Continue shopping</a>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon coral mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-bag"></i></div>
+        <h5>Your cart is empty</h5>
+        <p class="text-muted mb-3">Browse our collection to find your next favourite item.</p>
+        <a asp-controller="Products" asp-action="Index" class="btn btn-primary">Browse products</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="bh-card p-2 p-md-3">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="d-flex align-items-center gap-3 p-3" style="border-bottom:1px solid var(--bh-border);">
+                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                        {
+                            <img src="@item.ImageUrl" style="width:84px;height:84px;object-fit:cover;border-radius:12px;" />
+                        }
+                        else
+                        {
+                            <div style="width:84px;height:84px;background:var(--bh-bg);border-radius:12px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted"></i></div>
+                        }
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">@item.ProductName</h6>
+                            <small class="text-muted">₹@item.UnitPrice each</small>
+                        </div>
+                        <form asp-action="Update" method="post" class="d-flex align-items-center gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input name="quantity" type="number" min="0" max="@item.StockQuantity" value="@item.Quantity" class="form-control form-control-sm" style="width:72px" />
+                            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i></button>
+                        </form>
+                        <div class="fw-bold ms-3" style="min-width:80px;text-align:right;">₹@item.LineTotal</div>
+                        <form asp-action="Remove" asp-route-id="@item.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="bh-card p-4" style="position:sticky;top:90px;">
+                <h5 class="mb-3"><i class="bi bi-receipt text-coral me-2"></i>Order Summary</h5>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span class="fw-semibold">₹@Model.SubTotal</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Tax (18% GST)</span>
+                    <span class="fw-semibold">₹@Model.Tax</span>
+                </div>
+                <hr style="border-color:var(--bh-border);" />
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="fw-bold fs-5">Total</span>
+                    <span class="fw-bold fs-5 text-coral">₹@Model.Total</span>
+                </div>
+                <a asp-controller="Orders" asp-action="Checkout" class="btn btn-primary w-100 btn-lg">Proceed to Checkout <i class="bi bi-arrow-right ms-1"></i></a>
+                <div class="text-muted small text-center mt-3">
+                    <i class="bi bi-shield-check me-1"></i> Secure checkout with Stripe
+                </div>
+            </div>
+        </div>
+    </div>
+}

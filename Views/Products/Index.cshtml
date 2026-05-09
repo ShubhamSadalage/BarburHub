@@ -1,0 +1,113 @@
+@model List<ProductListItemDto>
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@{
+    ViewData["Title"] = "Products";
+    var categories = Model.Select(p => p.Category).Where(c => !string.IsNullOrEmpty(c)).Distinct().OrderBy(c => c).ToList();
+    var emojiByCat = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase) {
+        {"Hair Care","💇"}, {"Beard Care","🧔"}, {"Styling","💈"},
+        {"Shaving","🪒"}, {"Accessories","🎒"}, {"Skin Care","✨"}
+    };
+    string Emoji(string c) => emojiByCat.TryGetValue(c ?? "", out var e) ? e : "🛍️";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Shop Products</h2>
+        <p class="section-subtitle mb-0">Premium grooming essentials, curated by your favourite barbers.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2"><i class="bi bi-box-seam me-1"></i>@Model.Count items</span>
+</div>
+
+@if (categories.Any())
+{
+    <div class="d-flex flex-wrap gap-2 mb-4" id="categoryChips">
+        <span class="bh-chip active" data-category="all">
+            <span class="bh-chip-emoji">⭐</span> All
+        </span>
+        @foreach (var cat in categories)
+        {
+            <span class="bh-chip" data-category="@cat">
+                <span class="bh-chip-emoji">@Emoji(cat)</span> @cat
+            </span>
+        }
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon coral mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;"><i class="bi bi-bag"></i></div>
+        <h5>No products available</h5>
+        <p class="text-muted mb-0">Check back soon — fresh products are coming!</p>
+    </div>
+}
+else
+{
+    <div class="row g-3" id="productGrid">
+        @foreach (var p in Model)
+        {
+            <div class="col-md-4 col-lg-3 product-item" data-category="@p.Category">
+                <div class="product-card">
+                    <div class="product-img-wrap">
+                        @if (p.DiscountPercentage.HasValue && p.DiscountPercentage > 0)
+                        {
+                            <span class="badge-discount-floating">-@p.DiscountPercentage%</span>
+                        }
+                        @if (!string.IsNullOrEmpty(p.ImageUrl))
+                        {
+                            <img src="@p.ImageUrl" alt="@p.Name" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-image text-muted" style="font-size:3rem;"></i>
+                        }
+                    </div>
+                    <div class="product-body">
+                        <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none text-reset">
+                            <h6 class="product-name">@p.Name</h6>
+                        </a>
+                        <div class="product-meta">@p.Category · by @p.BarberName</div>
+                        <div class="product-price-row">
+                            @if (p.DiscountPercentage.HasValue && p.DiscountPercentage > 0)
+                            {
+                                <span class="price-final">₹@p.EffectivePrice</span>
+                                <span class="price-original">₹@p.Price</span>
+                            }
+                            else
+                            {
+                                <span class="price-final">₹@p.Price</span>
+                            }
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-light btn-sm flex-grow-1">View</a>
+                            @if (SignInManager.IsSignedIn(User) && User.IsInRole(AppRoles.User))
+                            {
+                                <form asp-controller="Cart" asp-action="Add" method="post" class="flex-grow-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productId" value="@p.Id" />
+                                    <button class="btn btn-primary btn-sm w-100"><i class="bi bi-bag-plus"></i> Add</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+<script>
+    const chips = document.querySelectorAll('#categoryChips .bh-chip');
+    const items = document.querySelectorAll('.product-item');
+    chips.forEach(c => c.addEventListener('click', () => {
+        chips.forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        const cat = c.dataset.category;
+        items.forEach(i => {
+            i.style.display = (cat === 'all' || i.dataset.category === cat) ? '' : 'none';
+        });
+    }));
+</script>
+}

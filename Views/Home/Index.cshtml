@@ -1,0 +1,143 @@
+@using BarberHub.Web.Features.Barbers.Dtos
+@model HomeBarberListDto
+@{
+    ViewData["Title"] = "Home";
+    string headline = Model.Source switch
+    {
+        HomeBarberSource.LiveLocation => "Barbers near you",
+        HomeBarberSource.SavedLocation => $"Near {Model.Label ?? "your saved location"}",
+        HomeBarberSource.City => $"Barbers in {Model.Label}",
+        _ => "Featured barbers"
+    };
+    string sub = Model.Source switch
+    {
+        HomeBarberSource.LiveLocation => "Sorted by distance from your current location.",
+        HomeBarberSource.SavedLocation => "Based on your last known location. Allow location for more accurate results.",
+        HomeBarberSource.City => "Allow location for distance-sorted results.",
+        _ => "Allow location to see barbers nearest to you."
+    };
+}
+
+<div class="bh-hero">
+    <div class="bh-hero-content">
+        <h1>Premium grooming, just around the corner.</h1>
+        <p>Find a great barber, book your slot, and skip the line. All in one place.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Barbers" asp-action="Index" class="btn btn-primary btn-lg"><i class="bi bi-scissors me-2"></i>Find a barber</a>
+            <a asp-controller="Products" asp-action="Index" class="btn btn-light btn-lg"><i class="bi bi-bag me-2"></i>Shop products</a>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+    <div>
+        <h2 class="section-title" id="bh-headline">@headline</h2>
+        <p class="section-subtitle mb-0" id="bh-subline">@sub</p>
+    </div>
+    <button id="bh-use-location" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-geo-alt me-1"></i>Use my location
+    </button>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="bh-card p-5 text-center">
+        <div class="stat-icon coral mx-auto mb-3" style="width:64px;height:64px;font-size:1.6rem;">
+            <i class="bi bi-search"></i>
+        </div>
+        <h5>No barbers yet</h5>
+        <p class="text-muted mb-0">Check back soon — barbers are signing up every week.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var b in Model.Items)
+        {
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a asp-controller="Barbers" asp-action="Details" asp-route-id="@b.Id"
+                   class="text-decoration-none text-reset d-block h-100">
+                    <div class="bh-shop-card h-100">
+                        <div class="bh-shop-cover">
+                            @if (!string.IsNullOrEmpty(b.ProfileImageUrl))
+                            {
+                                <img src="@b.ProfileImageUrl" alt="@b.ShopName" />
+                            }
+                            else
+                            {
+                                <div class="bh-shop-cover-fallback"><i class="bi bi-scissors"></i></div>
+                            }
+                            @if (b.DistanceKm.HasValue)
+                            {
+                                <span class="bh-distance-pill">
+                                    <i class="bi bi-geo-alt"></i> @b.DistanceKm.Value.ToString("0.#") km
+                                </span>
+                            }
+                        </div>
+                        <div class="bh-shop-body">
+                            <h5 class="bh-shop-name">@b.ShopName</h5>
+                            <div class="bh-shop-meta">
+                                <span><i class="bi bi-person text-muted me-1"></i>@b.FullName</span>
+                                @if (!string.IsNullOrEmpty(b.City))
+                                {
+                                    <span class="ms-2"><i class="bi bi-pin-map text-muted me-1"></i>@b.City</span>
+                                }
+                            </div>
+                            <div class="bh-shop-foot">
+                                <div>
+                                    <span class="bh-shop-from">From</span>
+                                    <span class="bh-shop-price">@(b.MinPrice is null ? "—" : "₹" + b.MinPrice.Value.ToString("0"))</span>
+                                </div>
+                                <span class="btn btn-primary btn-sm">Book <i class="bi bi-arrow-right ms-1"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+<script>
+(function() {
+    const btn = document.getElementById('bh-use-location');
+    if (!btn || !navigator.geolocation) {
+        if (btn) btn.style.display = 'none';
+        return;
+    }
+
+    btn.addEventListener('click', function() {
+        if (window.bhToast) window.bhToast('Requesting your location…', 'info');
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lng = pos.coords.longitude.toFixed(6);
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <text>
+                    // Authenticated — persist on profile, then reload with coords
+                    const fd = new FormData();
+                    fd.append('Latitude', lat);
+                    fd.append('Longitude', lng);
+                    const t = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (t) fd.append('__RequestVerificationToken', t.value);
+                    fetch('/Location/Update', { method:'POST', credentials:'same-origin', body: fd })
+                        .finally(() => { window.location.href = '/?lat=' + lat + '&lng=' + lng; });
+                    </text>
+                }
+                else
+                {
+                    <text>window.location.href = '/?lat=' + lat + '&lng=' + lng;</text>
+                }
+            },
+            function(err) {
+                if (window.bhToast) window.bhToast('Could not get location: ' + err.message, 'error');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+})();
+</script>
+}

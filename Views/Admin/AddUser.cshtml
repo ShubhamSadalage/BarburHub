@@ -1,0 +1,52 @@
+@model BarberHub.Web.Features.Admin.AdminAddUserDto
+@{ ViewData["Title"] = "Add Customer"; }
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
+            <div>
+                <h2 class="section-title">Add a Customer</h2>
+                <p class="section-subtitle mb-0">Quickly create an account for a walk-in or phone customer.</p>
+            </div>
+            <a asp-action="Users" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>Back to users</a>
+        </div>
+
+        <div class="bh-card p-4 p-md-5">
+            <partial name="_ValidationSummary" />
+            <form asp-action="AddUser" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control" placeholder="John Doe" />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" placeholder="customer@example.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="+91 98765 43210" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="City" class="form-label"></label>
+                        <input asp-for="City" class="form-control" placeholder="Pune" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="text" class="form-control" />
+                        <small class="text-muted">Share this password with the customer so they can log in. They can change it later.</small>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Create Customer</button>
+                    <a asp-action="Users" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

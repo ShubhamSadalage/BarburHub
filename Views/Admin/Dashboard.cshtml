@@ -1,0 +1,118 @@
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="section-title">Barber Dashboard</h2>
+        <p class="section-subtitle mb-0">Welcome back. Here's what's happening at your shop today.</p>
+    </div>
+    <span class="badge bg-light text-dark px-3 py-2"><i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("ddd, MMM dd")</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon coral"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <div class="stat-value">₹@(((decimal)ViewBag.TotalEarnings).ToString("N0"))</div>
+                <div class="stat-label">Total Earned</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-calendar-day"></i></div>
+            <div>
+                <div class="stat-value">@ViewBag.TodayBookings</div>
+                <div class="stat-label">Today's Bookings</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon violet"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="stat-value">@ViewBag.PendingBookings</div>
+                <div class="stat-label">Pending Approval</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon emerald"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <div class="stat-value">@ViewBag.ProductsCount</div>
+                <div class="stat-label">Active Products</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mb-3">Quick Actions</h4>
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-action="Earnings" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon coral"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                    <h5 class="mb-1">Earnings</h5>
+                    <p class="text-muted mb-0 small">Track total &amp; day-wise income.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-action="CreateBooking" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon amber"><i class="bi bi-calendar-plus"></i></div>
+                <div>
+                    <h5 class="mb-1">Book for Customer</h5>
+                    <p class="text-muted mb-0 small">Create a confirmed appointment.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-action="AddUser" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon emerald"><i class="bi bi-person-plus"></i></div>
+                <div>
+                    <h5 class="mb-1">Add Customer</h5>
+                    <p class="text-muted mb-0 small">Create a walk-in customer.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-controller="Bookings" asp-action="Manage" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon violet"><i class="bi bi-calendar-check"></i></div>
+                <div>
+                    <h5 class="mb-1">Manage Bookings</h5>
+                    <p class="text-muted mb-0 small">Accept, reject, complete bookings.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-controller="Products" asp-action="Manage" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon sky"><i class="bi bi-box-seam"></i></div>
+                <div>
+                    <h5 class="mb-1">My Products</h5>
+                    <p class="text-muted mb-0 small">Add, edit, manage your inventory.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <a asp-action="LeaveDays" class="bh-card bh-card-hover p-4 d-block text-decoration-none text-reset h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div class="stat-icon coral"><i class="bi bi-calendar-x"></i></div>
+                <div>
+                    <h5 class="mb-1">Leave Days</h5>
+                    <p class="text-muted mb-0 small">Set holidays &amp; weekly off.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>

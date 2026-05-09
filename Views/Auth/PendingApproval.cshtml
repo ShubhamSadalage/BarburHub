@@ -1,0 +1,49 @@
+@model BarberHub.Web.Domain.Entities.ApplicationUser
+@{
+    ViewData["Title"] = "Approval Pending";
+    var status = Model.ApprovalStatus;
+    var rejected = status == BarberHub.Web.Domain.Entities.BarberApprovalStatus.Rejected;
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="bh-card p-4 p-md-5 text-center">
+            @if (rejected)
+            {
+                <div class="stat-icon coral mx-auto mb-3" style="width:72px;height:72px;font-size:2rem;background:#fee2e2;color:var(--bh-danger);">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <h2>Application not approved</h2>
+                <p class="text-muted">Unfortunately, your barber registration was not approved.</p>
+                @if (!string.IsNullOrEmpty(Model.ApprovalRejectionReason))
+                {
+                    <div class="alert alert-warning text-start mt-3">
+                        <strong>Reason:</strong> @Model.ApprovalRejectionReason
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="stat-icon amber mx-auto mb-3" style="width:72px;height:72px;font-size:2rem;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <h2>Awaiting approval</h2>
+                <p class="text-muted">Your barber registration is being reviewed by our team. You'll be notified as soon as it's approved.</p>
+                <div class="bh-card p-3 mt-4 text-start" style="background:var(--bh-bg);">
+                    <div class="small">
+                        <strong>Submitted:</strong> @(Model.ApprovalRequestedAt?.ToString("MMM dd, yyyy · HH:mm") ?? "-")<br/>
+                        <strong>Shop:</strong> @Model.ShopName<br/>
+                        <strong>Email:</strong> @Model.Email
+                    </div>
+                </div>
+            }
+            <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back home</a>
+                <form asp-action="Logout" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-primary">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

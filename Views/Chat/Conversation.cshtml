@@ -1,0 +1,146 @@
+@model List<ChatMessageDto>
+@{
+    ViewData["Title"] = "Chat";
+    var otherUser = ViewBag.OtherUser as ApplicationUser;
+    var currentUserId = ViewBag.CurrentUserId as string;
+    var displayName = otherUser?.ShopName ?? otherUser?.FullName ?? "Chat";
+    var initial = string.IsNullOrEmpty(displayName) ? "U" : displayName.Substring(0,1).ToUpper();
+}
+
+<style>
+    .chat-shell { max-width: 820px; margin: 0 auto; }
+    .chat-header {
+        display:flex; align-items:center; gap:12px;
+        padding:16px 20px; border-bottom:1px solid var(--bh-border);
+        background:#fff; border-top-left-radius: var(--bh-radius); border-top-right-radius: var(--bh-radius);
+    }
+    .chat-body {
+        height: 540px; overflow-y: auto; padding: 24px;
+        background: var(--bh-bg);
+        background-image:
+            radial-gradient(circle at 20% 10%, rgba(239,91,91,0.05), transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(249,168,38,0.05), transparent 40%);
+    }
+    .chat-row { display:flex; margin-bottom:14px; }
+    .chat-row.mine { justify-content:flex-end; }
+    .chat-bubble {
+        max-width: 70%; padding: 10px 14px; border-radius: 18px;
+        font-size: .95rem; line-height: 1.4; word-wrap: break-word;
+    }
+    .chat-bubble.theirs {
+        background: #fff; color: var(--bh-text);
+        border: 1px solid var(--bh-border); border-bottom-left-radius: 6px;
+        box-shadow: var(--bh-shadow-sm);
+    }
+    .chat-bubble.mine {
+        background: var(--bh-primary); color: #fff;
+        border-bottom-right-radius: 6px;
+        box-shadow: 0 4px 12px rgba(239,91,91,0.25);
+    }
+    .chat-time { font-size: .7rem; opacity: .7; margin-top: 4px; }
+    .chat-footer {
+        padding: 16px 20px; border-top: 1px solid var(--bh-border); background: #fff;
+        border-bottom-left-radius: var(--bh-radius); border-bottom-right-radius: var(--bh-radius);
+    }
+    .chat-input {
+        border: 1px solid var(--bh-border); border-radius: 999px;
+        padding: 10px 18px; flex-grow: 1; background: var(--bh-bg);
+    }
+    .chat-input:focus { outline: none; border-color: var(--bh-primary); background: #fff;
+        box-shadow: 0 0 0 4px rgba(239,91,91,0.12); }
+    .chat-send {
+        width: 44px; height: 44px; border-radius: 50%; border: 0;
+        background: var(--bh-primary); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 12px rgba(239,91,91,0.3); cursor: pointer; transition: transform .15s ease;
+    }
+    .chat-send:hover { transform: scale(1.05); background: var(--bh-primary-dark); }
+</style>
+
+<div class="chat-shell">
+    <div class="bh-card p-0 overflow-hidden">
+        <div class="chat-header">
+            <a asp-action="Index" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i></a>
+            @if (!string.IsNullOrEmpty(otherUser?.ProfileImageUrl))
+            {
+                <img src="@otherUser.ProfileImageUrl" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" />
+            }
+            else
+            {
+                <div class="bh-avatar" style="width:42px;height:42px;font-size:1rem;">@initial</div>
+            }
+            <div class="flex-grow-1">
+                <strong class="d-block">@displayName</strong>
+                <small class="text-muted"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bh-success);margin-right:4px;"></span> Active</small>
+            </div>
+        </div>
+        <div id="messages" class="chat-body">
+            @foreach (var m in Model)
+            {
+                var mine = m.SenderId == currentUserId;
+                <div class="chat-row @(mine ? "mine" : "")">
+                    <div class="chat-bubble @(mine ? "mine" : "theirs")">
+                        <div>@m.Content</div>
+                        <div class="chat-time">@m.SentAt.ToString("HH:mm")</div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="chat-footer">
+            <form id="sendForm" class="d-flex gap-2 align-items-center">
+                <input id="msgInput" class="chat-input" placeholder="Type a message..." autocomplete="off" required />
+                <button type="submit" class="chat-send"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const receiverId = '@otherUser?.Id';
+    const myId = '@currentUserId';
+    const messages = document.getElementById('messages');
+    const input = document.getElementById('msgInput');
+
+    function scrollDown() { messages.scrollTop = messages.scrollHeight; }
+    scrollDown();
+
+    function escapeHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function appendMessage(msg, mine) {
+        const row = document.createElement('div');
+        row.className = 'chat-row' + (mine ? ' mine' : '');
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble ' + (mine ? 'mine' : 'theirs');
+        bubble.innerHTML = `<div>${escapeHtml(msg.content)}</div>
+            <div class="chat-time">${new Date(msg.sentAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        scrollDown();
+    }
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl('/hubs/chat')
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on('ReceiveMessage', m => {
+        if (m.senderId === receiverId) appendMessage(m, false);
+    });
+    connection.on('MessageSent', m => appendMessage(m, true));
+
+    connection.start().catch(err => console.error(err));
+
+    document.getElementById('sendForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        await connection.invoke('SendMessage', receiverId, text);
+        input.value = '';
+        input.focus();
+    });
+</script>
+}

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11716.220 stable
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarberHub.Web", "BarberHub.Web.csproj", "{35AB0873-5B2F-D084-69E4-934993855F06}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{35AB0873-5B2F-D084-69E4-934993855F06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35AB0873-5B2F-D084-69E4-934993855F06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35AB0873-5B2F-D084-69E4-934993855F06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35AB0873-5B2F-D084-69E4-934993855F06}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C75465FA-13F2-4769-B062-C23F1D5A44B1}
+	EndGlobalSection
+EndGlobal

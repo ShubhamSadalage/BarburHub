@@ -1,0 +1,61 @@
+@using BarberHub.Web.Domain.Entities
+@using BarberHub.Web.Shared.Config
+@using Microsoft.Extensions.Options
+@inject IOptions<FeatureFlags> FeatureFlagsOpt
+@model CheckoutDto
+@{
+    ViewData["Title"] = "Checkout";
+    var onlineEnabled = FeatureFlagsOpt.Value.OnlinePaymentEnabled;
+    // If online is disabled, force COD as the default selection
+    if (!onlineEnabled) { Model.PaymentMethod = PaymentMethod.CashOnDelivery; }
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <h2 class="section-title">Checkout</h2>
+        <p class="section-subtitle">Shipping address & payment.</p>
+
+        <div class="bh-card p-4 p-md-5">
+            <partial name="_ValidationSummary" />
+            <form asp-action="Checkout" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-4">
+                    <label asp-for="ShippingAddress" class="form-label">Shipping Address</label>
+                    <textarea asp-for="ShippingAddress" class="form-control" rows="4" required placeholder="House/flat no, street, area, city, state, PIN code"></textarea>
+                    <span asp-validation-for="ShippingAddress" class="text-danger small"></span>
+                </div>
+
+                <label class="form-label mb-2">Payment Method</label>
+                <div class="d-flex flex-column gap-2 mb-4">
+                    @if (onlineEnabled)
+                    {
+                        <label class="bh-card p-3 d-flex align-items-start gap-3" style="cursor:pointer;">
+                            <input type="radio" name="PaymentMethod" value="@PaymentMethod.Online" class="form-check-input mt-1"
+                                   @(Model.PaymentMethod == PaymentMethod.Online ? "checked" : "") />
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">
+                                    <i class="bi bi-credit-card text-coral me-2"></i>Pay Online (Card / UPI)
+                                </div>
+                                <div class="text-muted small">Secure payment via Stripe.</div>
+                            </div>
+                        </label>
+                    }
+                    <label class="bh-card p-3 d-flex align-items-start gap-3" style="cursor:pointer;">
+                        <input type="radio" name="PaymentMethod" value="@PaymentMethod.CashOnDelivery" class="form-check-input mt-1" checked />
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">
+                                <i class="bi bi-cash-coin text-coral me-2"></i>Cash on Delivery
+                            </div>
+                            <div class="text-muted small">Pay in cash when your order arrives. Seller marks it paid after receiving payment.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <button class="btn btn-primary w-100 btn-lg">Place Order <i class="bi bi-arrow-right ms-1"></i></button>
+            </form>
+            <div class="text-muted small text-center mt-3">
+                <i class="bi bi-shield-check me-1"></i> Your details are secure.
+            </div>
+        </div>
+    </div>
+</div>
